@@ -3,8 +3,8 @@ library(sas7bdat)
 
 demo <- read.sas7bdat("../temp/demo.sas7bdat")
 demo_b <- read.sas7bdat("../temp/demo_b.sas7bdat")
-demo   <- select(tbl_df(demo)  , SEQN, RIDAGEYR, RIAGENDR, RIDPREG, RIDRETH1, RIDSTATR, SDDSRVYR)
-demo_b <- select(tbl_df(demo_b), SEQN, RIDAGEYR, RIAGENDR, RIDPREG, RIDRETH1, RIDSTATR, SDDSRVYR)
+demo   <- select(tbl_df(demo)  , SEQN, SDDSRVYR, RIDSTATR, RIDPREG, SDMVPSU, SDMVSTRA, WTMEC4YR, RIAGENDR, RIDAGEYR, RIDRETH1, DMDEDUC)
+demo_b <- select(tbl_df(demo_b), SEQN, SDDSRVYR, RIDSTATR, RIDPREG, SDMVPSU, SDMVSTRA, WTMEC4YR, RIAGENDR, RIDAGEYR, RIDRETH1, DMDEDUC)
 demo_4yr <- rbind(demo, demo_b)
 saveRDS(demo_4yr, "../data/demo_4yr.rds")
 
