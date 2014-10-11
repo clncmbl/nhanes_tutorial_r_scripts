@@ -1,4 +1,4 @@
-# Step 1 of task 3a
+# Steps 1 and 2 of task 3a
 
 demo_bp <- readRDS("../data/demo_bp2b.rds")
 
@@ -46,3 +46,7 @@ quantile(demo_bp$LBXTC, c(1.00,.99,.95,.90,.75,.50,.25,.10,.05,.01,0), na.rm=T)
 library(extremevalues)
 getOutliers(demo_bp$LBXTC[!is.na(demo_bp$LBXTC)])
 # Can use outlierPlot to view.
+
+# Scatter plot of survey weight against cholesterol.
+plot(demo_bp$LBXTC, demo_bp$WTMEC4YR, pch='1')
+
