@@ -165,3 +165,6 @@ summarize(group_by(d, HLP_lab),
           N=sum(!is.na(LBXTC)),
           Minimum=min(LBXTC, na.rm=T),
           Maximum=max(LBXTC, na.rm=T))
+
+# Save the recode dataset.
+saveRDS(demo_bp, "../data/demo_bp3.rds")
