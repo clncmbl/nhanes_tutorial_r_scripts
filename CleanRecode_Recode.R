@@ -94,4 +94,74 @@ demo_bp$HLP[demo_bp$HLP == 0 & (demo_bp$HLP_lab == 1 | demo_bp$HLP_trt == 1)] <-
 table(filter(demo_bp, HBP_trt==0, SBP140==0, DBP90==0, RIDAGEYR>=20)$HBP, useNA="always")
 table(filter(demo_bp, is.na(HBP_trt) | is.na(SBP140) | is.na(DBP90), RIDAGEYR>=20)$HBP, useNA="always")
 table(filter(demo_bp, RIDAGEYR>=20)$HBP, useNA="always")
-# Need to run more checks.
+
+table(filter(demo_bp, HLP_trt==0, HLP_lab==0, RIDAGEYR>=20)$HLP, useNA="always")
+table(filter(demo_bp, is.na(HLP_trt) | is.na(HLP_lab), RIDAGEYR>=20)$HLP, useNA="always")
+table(filter(demo_bp, RIDAGEYR>=20)$HLP, useNA="always")
+
+# Checks that look more like the SAS printout from here:
+# http://www.cdc.gov/nchs/tutorials/nhanes/downloads/Continuous/Clean&Recode_CheckRecodes.pdf
+# From SAS code here:
+# ftp://ftp.cdc.gov/pub/health_statistics/nchs/tutorial/nhanes/Continuous/CleanRecode_CheckRecodes.sas
+d <- filter(demo_bp, RIDAGEYR>=20, RIDSTATR==2)
+ungroup(summarize(group_by(d, raceth, RIDRETH1),
+                  count=n())) %>%
+#  arrange(desc(count)) %>%
+  mutate(cumcount=cumsum(count),
+         percent=100*count/sum(count),
+         cumperc=cumsum(percent))
+
+ungroup(summarize(group_by(d, HBP_trt, BPQ020, BPQ050A),
+                  count=n())) %>%
+#  arrange(desc(count)) %>%
+  arrange(!is.na(HBP_trt), HBP_trt, BPQ020, !is.na(BPQ050A), BPQ050A) %>% # Sorted to match SAS
+  mutate(cumcount=cumsum(count),
+         percent=100*count/sum(count),
+         cumperc=cumsum(percent))
+
+summarize(group_by(d, HBP, HBP_trt, SBP140, DBP90),
+                  count=n()) %>%
+  ungroup() %>%
+  #  arrange(desc(count)) %>%
+  arrange(!is.na(HBP), HBP,
+          !is.na(HBP_trt), HBP_trt,
+          !is.na(SBP140), SBP140,
+          !is.na(DBP90), DBP90) %>% # Sorted to match SAS
+  mutate(cumcount=cumsum(count),
+         percent=100*count/sum(count),
+         cumperc=cumsum(percent))
+
+ungroup(summarize(group_by(d, HLP_trt, BPQ080, BPQ100D),
+                  count=n())) %>%
+  #  arrange(desc(count)) %>%
+  arrange(!is.na(HLP_trt), HLP_trt, BPQ080, !is.na(BPQ100D), BPQ100D) %>% # Sorted to match SAS
+  mutate(cumcount=cumsum(count),
+         percent=100*count/sum(count),
+         cumperc=cumsum(percent))
+
+summarize(group_by(d, HLP, HLP_trt, HLP_lab),
+          count=n()) %>%
+  ungroup() %>%
+  #  arrange(desc(count)) %>%
+  arrange(!is.na(HLP), HLP,
+          !is.na(HLP_trt), HLP_trt,
+          !is.na(HLP_lab), HLP_lab) %>% # Sorted to match SAS
+  mutate(cumcount=cumsum(count),
+         percent=100*count/sum(count),
+         cumperc=cumsum(percent))
+
+summarize(group_by(d, age3cat), N=n(), Minimum=min(RIDAGEYR), Maximum=max(RIDAGEYR))
+
+summarize(group_by(d, SBP140), N=n(), Minimum=min(mean_sbp), Maximum=max(mean_sbp))
+
+summarize(group_by(d, DBP90),
+          NObs=n(),
+          N=sum(!is.na(mean_dbp)),
+          Minimum=min(mean_dbp, na.rm=T),
+          Maximum=max(mean_dbp, na.rm=T))
+
+summarize(group_by(d, HLP_lab),
+          NObs=n(),
+          N=sum(!is.na(LBXTC)),
+          Minimum=min(LBXTC, na.rm=T),
+          Maximum=max(LBXTC, na.rm=T))
