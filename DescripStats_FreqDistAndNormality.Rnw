@@ -1,0 +1,56 @@
+\documentclass{article}
+
+\usepackage[margin=0.5in,papersize={8.5in,11in}]{geometry}
+
+% Change paragraph formatting to put line between paragraphs and not indent.
+\usepackage[parfill]{parskip}
+
+\usepackage{amsmath}
+
+\begin{document}
+
+<<maybe_need_this_instead, eval=FALSE, echo=FALSE>>=
+
+library(dplyr)
+library(sas7bdat)
+
+ad <- tbl_df(read.sas7bdat("../temp/analysis_data.sas7bdat"))
+sum(trunc(ad[ad$RIAGENDR==1 & ad$RIDAGEYR >= 20 & ad$RIDAGEYR <= 39 & !is.na(ad$LBXTC),]$WTMEC4YR))
+@
+
+<<load>>=
+demo_bp <- readRDS("../data/demo_bp3.rds")
+
+sumwgts1 <- sum(trunc(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$WTMEC4YR))
+
+sumwgts1
+@
+The above trunc call and the is.na are necessary to get agreement with sum of weights
+in the tutorial printout: 36574453.
+
+<<mean>>=
+
+demo_bp$lbxtcwtd <- trunc(demo_bp$WTMEC4YR)*demo_bp$LBXTC
+
+sumlbxtc1 <- sum(trunc(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$lbxtcwtd))
+
+sprintf("%15.0f", trunc(sumlbxtc1))
+
+mean1 <- sumlbxtc1/sumwgts1
+sprintf("%.6f", mean1)
+@
+
+<<usesurvey>>=
+library(survey)
+
+maindesign <- svydesign(id=~SDMVPSU, strat=~SDMVSTRA, weight=~WTMEC4YR, data=demo_bp, nest=TRUE)
+
+sub1 <- subset(maindesign, !is.na(LBXTC) & RIAGENDR==1 & age3cat=="(19,39]")
+lbxtc1 <- svymean(~LBXTC, sub1)
+lbxtc1
+sprintf("%.6f", lbxtc1[1])
+str(lbxtc1)
+@
+Can't confirm the standardard error of the mean, in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
+
+\end{document}

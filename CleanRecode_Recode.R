@@ -19,7 +19,10 @@ demo_bp$raceth <- factor(demo_bp$raceth,
                            "Mexican American",
                            "Other"))
   
-demo_bp$age3cat <- cut(demo_bp$RIDAGEYR, c(19,39,59,150))
+demo_bp$age3cat <- cut(demo_bp$RIDAGEYR,
+                       c(0,19,39,59,150),
+                       include.lowest=T,
+                       ordered_result=T)
 
 # Create two new blood pressure variables indicating numbers of non-null readings.
 demo_bp <- mutate(demo_bp,
