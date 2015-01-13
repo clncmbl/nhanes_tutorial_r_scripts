@@ -9,27 +9,33 @@
 
 \begin{document}
 
-<<maybe_need_this_instead, eval=FALSE, echo=FALSE>>=
-
+<<loaddplyr, message=FALSE>>=
 library(dplyr)
-library(sas7bdat)
-
-ad <- tbl_df(read.sas7bdat("../temp/analysis_data.sas7bdat"))
-sum(trunc(ad[ad$RIAGENDR==1 & ad$RIDAGEYR >= 20 & ad$RIDAGEYR <= 39 & !is.na(ad$LBXTC),]$WTMEC4YR))
 @
 
+<<maybe_need_this_instead, eval=FALSE, echo=FALSE>>=
+#library(sas7bdat)
+#ad <- tbl_df(read.sas7bdat("../temp/analysis_data.sas7bdat"))
+#sum(trunc(ad[ad$RIAGENDR==1 & ad$RIDAGEYR >= 20 & ad$RIDAGEYR <= 39 & !is.na(ad$LBXTC),]$WTMEC4YR))
+@
+
+Load the data. 
 <<load>>=
 demo_bp <- readRDS("../data/demo_bp3.rds")
+@
+
+Check the sum of the weights for males from 20 to 39 years of age.  The trunc call and the is.na are necessary to get agreement with sum of weights
+in the tutorial printout: 36574453.  The trunc call chops off the decimal part of the weight values prior to
+summing.  The is.na call removes weights from the summation for records that have null LBXTC values.
+<<checksumwts>>=
 
 sumwgts1 <- sum(trunc(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$WTMEC4YR))
-
 sumwgts1
 @
-The above trunc call and the is.na are necessary to get agreement with sum of weights
-in the tutorial printout: 36574453.
 
+
+Multiply each LBXTC value by the truncated weight, sum for the same records of interest, and calculated the weighted sum and weighted mean.  The tutorial printout has values 7030718999 and 192.230325, respectively.
 <<mean>>=
-
 demo_bp$lbxtcwtd <- trunc(demo_bp$WTMEC4YR)*demo_bp$LBXTC
 
 sumlbxtc1 <- sum(trunc(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$lbxtcwtd))
@@ -40,17 +46,73 @@ mean1 <- sumlbxtc1/sumwgts1
 sprintf("%.6f", mean1)
 @
 
-<<usesurvey>>=
+Load the survey library and initialize a survey design object from the data.
+<<initsurvey, message=FALSE>>=
 library(survey)
-
 maindesign <- svydesign(id=~SDMVPSU, strat=~SDMVSTRA, weight=~WTMEC4YR, data=demo_bp, nest=TRUE)
+@
 
+<<svymean>>=
 sub1 <- subset(maindesign, !is.na(LBXTC) & RIAGENDR==1 & age3cat=="(19,39]")
 lbxtc1 <- svymean(~LBXTC, sub1)
 lbxtc1
 sprintf("%.6f", lbxtc1[1])
 str(lbxtc1)
 @
-Can't confirm the standardard error of the mean, in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
+
+The following demonstrates that the survey package does not truncate the weights as does the tutorial printout version.
+<<calcmean_notrunc>>=
+sumwgts1b <- sum(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$WTMEC4YR)
+sumwgts1b
+
+demo_bp$lbxtcwtd <- demo_bp$WTMEC4YR*demo_bp$LBXTC
+
+sumlbxtc1b <- sum(demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]$lbxtcwtd)
+
+sprintf("%15.0f", trunc(sumlbxtc1b))
+
+mean1b <- sumlbxtc1b/sumwgts1b
+sprintf("%.6f", mean1b)
+@
+
+Calculating the variance using truncated weights for comparison with tutorial printout value: 1722.16894
+<<variance>>=
+demo_bp$lbxtc2wtd <- trunc(demo_bp$WTMEC4YR) * (demo_bp$LBXTC)^2
+sumlbxtc21 <- sum(trunc(demo_bp[demo_bp$RIAGENDR == 1 & demo_bp$age3cat == "(19,39]" & !is.na(demo_bp$LBXTC), ]$lbxtc2wtd))
+sprintf("%.15e", sumlbxtc21)
+var1 <- sumlbxtc21/sumwgts1 - mean1^2
+sprintf("%.6f", var1)
+@
+
+Note that sumlbxtc21 matches the uncorrected sum of squares in the tutorial printout.
+
+Compare with calculating variance using corrected sum of squares.
+<<>>=
+demo_bp$lbxtc2wtdcorr <- trunc(demo_bp$WTMEC4YR) * (demo_bp$LBXTC-mean1)^2
+sumlbxtc21corr <- sum(trunc(demo_bp[demo_bp$RIAGENDR == 1 & demo_bp$age3cat == "(19,39]" & !is.na(demo_bp$LBXTC), ]$lbxtc2wtdcorr))
+sprintf("%.15e", sumlbxtc21corr)
+var1corr <- sumlbxtc21corr/sumwgts1
+sprintf("%.6f", var1corr)
+@
+
+Skewness (tutorial skewness = 0.84879513)
+<<>>=
+demo_bp$lbxtc3wtd <- trunc(demo_bp$WTMEC4YR) * (demo_bp$LBXTC-mean1)^3
+sumlbxtc31 <- sum(trunc(demo_bp[demo_bp$RIAGENDR == 1 & demo_bp$age3cat == "(19,39]" & !is.na(demo_bp$LBXTC), ]$lbxtc3wtd))
+sprintf("%.15e", sumlbxtc31)
+skewness <- (sumlbxtc31/sumwgts1)/(var1corr)^(3/2)
+sprintf("%.10f", skewness)
+
+@
+
+
+Note that sumlbxtc21corr matches the corrected sum of squares in the tutorial printout.
+
+Can't confirm the standardard error of the mean in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
+
+Try BRR,
+<<sub1brr>>=
+#sub1brr <- as.svrepdesign(sub1, type="BRR")
+@
 
 \end{document}
