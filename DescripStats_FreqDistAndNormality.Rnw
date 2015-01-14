@@ -95,6 +95,8 @@ var1corr <- sumlbxtc21corr/sumwgts1
 sprintf("%.6f", var1corr)
 @
 
+Note that sumlbxtc21corr matches the corrected sum of squares in the tutorial printout.
+
 Skewness (tutorial skewness = 0.84879513)
 <<>>=
 demo_bp$lbxtc3wtd <- trunc(demo_bp$WTMEC4YR) * (demo_bp$LBXTC-mean1)^3
@@ -102,11 +104,24 @@ sumlbxtc31 <- sum(trunc(demo_bp[demo_bp$RIAGENDR == 1 & demo_bp$age3cat == "(19,
 sprintf("%.15e", sumlbxtc31)
 skewness <- (sumlbxtc31/sumwgts1)/(var1corr)^(3/2)
 sprintf("%.10f", skewness)
-
 @
 
+Kurtosis (tutorial kurtosis = 2.4165963)
+<<>>=
+demo_bp$lbxtc4wtd <- trunc(demo_bp$WTMEC4YR) * (demo_bp$LBXTC-mean1)^4
+sumlbxtc41 <- sum(trunc(demo_bp[demo_bp$RIAGENDR == 1 & demo_bp$age3cat == "(19,39]" & !is.na(demo_bp$LBXTC), ]$lbxtc4wtd))
+sprintf("%.15e", sumlbxtc41)
+kurtosis <- (sumlbxtc41/sumwgts1)/(var1corr)^2 - 3
+sprintf("%.10f", kurtosis)
+@
 
-Note that sumlbxtc21corr matches the corrected sum of squares in the tutorial printout.
+Coefficient of variation  (tutorial printout: "Coeff Variation 21.5881772")
+<<>>=
+coeffvar <- sqrt(var1corr) / mean1
+sprintf("%.10f", coeffvar)
+@
+Note the factor of 100 between the two.
+
 
 Can't confirm the standardard error of the mean in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
 
