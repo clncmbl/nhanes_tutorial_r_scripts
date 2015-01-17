@@ -58,7 +58,12 @@ lbxtc1 <- svymean(~LBXTC, sub1)
 lbxtc1
 sprintf("%.6f", lbxtc1[1])
 str(lbxtc1)
+
+svyquantile(~LBXTC, sub1, c(0.25, 0.5, 0.75))
 @
+The above result from svyquantile agree with the tutorial printout that the median is 189 and the IQR is 215 - 163 = 52.
+
+Can't confirm the standardard error of the mean in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
 
 The following demonstrates that the survey package does not truncate the weights as does the tutorial printout version.
 <<calcmean_notrunc>>=
@@ -122,8 +127,27 @@ sprintf("%.10f", coeffvar)
 @
 Note the factor of 100 between the two.
 
+Normality.
+<<normality, message=FALSE>>=
+library(Hmisc)
+# ecdf
+d20_39 <- demo_bp[demo_bp$RIAGENDR==1 & demo_bp$age3cat=="(19,39]" & !is.na(demo_bp$LBXTC),]
+Ecdf(d20_39$LBXTC, weights=d20_39$WTMEC4YR, xlab="Cholesterol")
+norm1 <- pnorm(60:400, 192.230325, 41.4990234)
+lines(60:400, norm1, col="red")
+# density
+plot(density(d20_39$LBXTC, weights=d20_39$WTMEC4YR/sum(d20_39$WTMEC4YR)))
+lines(60:400, dnorm(60:400, 192.230325, 41.4990234), col="red")
 
-Can't confirm the standardard error of the mean in this case because, as the tutorial says, the value in the tutorial printout is incorrect.
+ecdf1 <- wtd.Ecdf(d20_39$LBXTC, weights=d20_39$WTMEC4YR)
+
+# Kolmogorov-Smirnov.  For the normal part of the calculation, using the exact values
+# of mean and standard deviation from the tutorial printout.
+ecdf1$pnorm <- pnorm(ecdf1$x, 192.230325, 41.4990234)
+ksD <- max(ecdf1$ecdf - ecdf1$pnorm)
+sprintf("%.7f", ksD)
+# Compare with tutorial printout value of 0.052904
+@
 
 Try BRR,
 <<sub1brr>>=
